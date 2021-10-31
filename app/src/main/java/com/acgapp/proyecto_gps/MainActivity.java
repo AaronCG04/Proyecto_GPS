@@ -7,6 +7,7 @@ import android.Manifest;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import android.location.Location;
@@ -14,7 +15,10 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,7 +27,8 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
-    TextView lon,lat;
+    TextView lon,lat,con;
+    //Button ver_db;
     SQLiteDatabase db_escribir;
     SQLiteDatabase db_leer;
     @Override
@@ -32,14 +37,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_main);
         lon=findViewById(R.id.longitud);
         lat=findViewById(R.id.latitud);
+        con=findViewById(R.id.contenido_db);
+        con.setMovementMethod(new ScrollingMovementMethod());
+        //ver_db=findViewById(R.id.ver_db);
         Base_de_Datos db_crear=new Base_de_Datos(this);
+
         db_escribir=db_crear.getWritableDatabase();
         db_leer=db_crear.getReadableDatabase();
+        if (db_escribir!=null){
+            Toast.makeText(this, "Se Creo Base de Datos", Toast.LENGTH_SHORT).show();
+        }else{
+            Toast.makeText(this, "No se Creo Base de Datos", Toast.LENGTH_SHORT).show();
+        }
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,}, 1000);
         } else {
             localizar();
         }
+
     }
     public void onRequestPermissionsResult(int requestCode,String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -59,8 +74,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,}, 1000);
             return;
         }
-        adminloc.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,10000,10,this);
-        adminloc.requestLocationUpdates(LocationManager.GPS_PROVIDER,10000,10,this);
+        adminloc.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,1000,1,this);
+        adminloc.requestLocationUpdates(LocationManager.GPS_PROVIDER,1000,1,this);
     }
 
 ///------------------------------------------------------------------
@@ -103,11 +118,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         lon.setText("GPS Desactivado");
     }
     public void Insertar_Datos(String num_control,String latitud,String longitud,String fecha){
-        if (db_escribir!=null){
-            Toast.makeText(this, "Se Creo Base de Datos", Toast.LENGTH_SHORT).show();
-        }else{
-            Toast.makeText(this, "No se Creo Base de Datos", Toast.LENGTH_SHORT).show();
-        }
+
         ContentValues datos_sep = new ContentValues();
         datos_sep.put("num_control",num_control);
         datos_sep.put("latitud",latitud);
@@ -124,5 +135,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         System.out.print(fecha);
         Toast.makeText(this, "Se Optubo Fecha", Toast.LENGTH_SHORT).show();
         return fecha;
+    }
+    public void mostrar_base(View view){
+        Toast.makeText(this, "Se Va a mostrar Base de Datos", Toast.LENGTH_SHORT).show();
+        Cursor optener= db_leer.rawQuery("SELECT num_control,latitud,longitud,fecha from cordenadas",null);
+        String texto="";
+        if(optener.moveToFirst()){
+            do {
+                texto=texto+optener.getString(0)+"->"+optener.getString(1)+"->"+optener.getString(2)+"->"+optener.getString(3)+"\n";
+                con.setText(texto);
+            }while (optener.moveToNext());
+        }
     }
 }
